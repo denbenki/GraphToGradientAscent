@@ -9,7 +9,7 @@ from Main_Pack import gradient_ascendor_backup
 # max_amount_of_nodes = 50
 # for i in range(1, max_amount_of_nodes + 1):
 
-i = 20
+i = 40
 
 graph = connected_graph_generator.gnp_random_connected_graph(i, 1/i, 10)
 
@@ -58,10 +58,10 @@ graph = connected_graph_generator.gnp_random_connected_graph(i, 1/i, 10)
 a0 = time.time()
 position_dict = gradient_ascendor_backup.graph_position_ascendor(graph)
 b0 = time.time()
-print(b0 - a0)
-
+print(str(b0 - a0) + " This is the time it takes to run the algorithm")
+print(position_dict)
 # Below plots the acquired position dictionaries
- #plot_threed_graph(position_dict, graph)
+# plot_threed_graph(position_dict, graph)
 
 
 # node_time_list.append(b0-a0)
