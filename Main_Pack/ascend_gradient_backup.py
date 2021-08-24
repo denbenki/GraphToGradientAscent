@@ -9,59 +9,40 @@ import random
 # The below is out-commented in order to try precalculating the gradients.
 
 # Hard-coding a function for testing the algorithm.
-def loss_function_var_list(var_list, con_tup_list):
+def loss_function_pos_mat(pos_mat, adj_mat, nu_nodes):
+    # Manipulating the arrays to create symmetric, square distance array
 
+    expd = tf.expand_dims(pos_mat, 2)  # Give "depth"
+    tiled = tf.tile(expd, [1, 1, nu_nodes])
+    trans = tf.transpose(pos_mat)
+    sq_dists = tf.reduce_sum(tf.math.squared_difference(trans, tiled), 1)
 
-    # Creates a dictionary of exponential functions of the distances and adds these together
+    # Creating log frequency reaction rate array (proportional)
+    reac_mat = tf.exp(tf.negative(sq_dists))
+    sum_reac = tf.reduce_sum(reac_mat)
+    log_freq_reac = tf.math.log(tf.divide(reac_mat, sum_reac))
 
-    exp_neg_dist2 = {}
-    sum_w = 0
+    # Matrix to be summed over to create likelihood
+    like_mat = tf.math.multiply(adj_mat, log_freq_reac)
+    return tf.negative(tf.reduce_sum(like_mat))
 
-    for i in range(0, len(var_list)):  # Is this the fastest way? Run some testing
-        for j in range(0, i):
-            exp_neg_dist2[(j, i)] = (tf.exp(tf.negative((tf.tensordot(tf.math.subtract(var_list[i], var_list[j]),
-                                              tf.math.subtract(var_list[i], var_list[j]), 1)))))
-            sum_w += 2 * exp_neg_dist2[(j, i)]  # Since we are only moving through the lower triangle of matrix: Add twice
-
-    # Time to create the likelihood-value (negative, since we are minimizing)
-
-    likelihood_neg = 0
-    for e in con_tup_list:
-        likelihood_neg -= (2 * tf.math.log(exp_neg_dist2[e] / sum_w))  # TODO: Add counts of barcodes
-
-    return likelihood_neg
-
-def optimize_positions(graph, learning_rate):
+def optimize_positions(pos_mat, adj_mat, nu_nodes, learning_rate):
 
     """
     :param graph: A networkx graph
     :param learning_rate: Step size
     :return: positions minimizing a hard coded loss function.
     """
-
-    # Let's start with getting a way of creating the variables necessary.
-    G = numpy.asarray(nx.to_numpy_matrix(graph))  # To handle the graph smoothly
-    con_tup_list = graph.edges  # To handle the connections
-
-    # Initialisation of positions. When testing, we'll find a way to seed this from outside the function.
-    var_list = []
-    for i in range(0, G.shape[0]):
-        coordinates = []  # 3D-coordinates
-
-        for j in range(0, 3):
-            coordinates.append(tf.Variable(random.random()))  # Initializing the variables.
-
-        var_list.append(coordinates)  # Add to the array
-
     # Defining the optimiser and loss function
 
-    optim = tf.keras.optimizers.SGD(learning_rate)
-    loss_function = lambda: loss_function_var_list(var_list, con_tup_list)
+    optim = tf.keras.optimizers.Adam(learning_rate)  # Arg = learning rate
+    loss_function = lambda: loss_function_pos_mat(pos_mat, adj_mat, nu_nodes)
 
     # Running the optimization. Each call for the "minimize" method is one step.
-    for i in range(0, 100):
-        optim.minimize(loss_function, var_list)
+    for i in range(0, 2000):
+        optim.minimize(loss_function, [pos_mat])
+        print(-loss_function_pos_mat(pos_mat, adj_mat, nu_nodes))
 
-    print(loss_function_var_list(var_list, con_tup_list))
+    positions = tf.reshape(pos_mat, [tf.size(pos_mat)])
 
-    return var_list
+    return positions

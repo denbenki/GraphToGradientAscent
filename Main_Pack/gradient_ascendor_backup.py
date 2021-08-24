@@ -1,12 +1,14 @@
-from .ascend_gradient import optimize_positions
-import numpy
 import tensorflow as tf
+import numpy
 import networkx as nx
-from Graph_coordinate_optimiser.plot_3D_graph import plot_threed_graph
+import random
+
+from .ascend_gradient_backup import optimize_positions
+
 
 #TODO: Update this for variable loss functions. Right now it's hard coded. And I should get a hold of where I'm going
 
-def graph_position_ascendor(graph, learning_rate = 0.1):
+def graph_position_ascendor(graph, learning_rate=0.1):
 
     """
     A function which, given a graph, minimises a loss function given 3D
